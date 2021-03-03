@@ -1,0 +1,6 @@
+*_clnt.c
+*_svc.c
+*_xdr.c
+agenda.h
+client
+server
