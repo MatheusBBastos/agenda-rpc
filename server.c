@@ -14,7 +14,7 @@ consulta_res * consulta_1_svc (str_t *nome, struct svc_req *rqstp) {
  
    printf("Recebeu consulta: %s\n", *nome);
    
-   xdr_free(xdr_consulta_res, &res);
+   xdr_free((xdrproc_t) xdr_consulta_res, &res);
 
    contato_p *cp = &res.consulta_res_u.contato;
 
@@ -36,9 +36,9 @@ consulta_res * consulta_1_svc (str_t *nome, struct svc_req *rqstp) {
             return (&res);
          }
       }
-   } 
-   
-   fclose(arquivo);
+      fclose(arquivo);
+   }
+
    *cp = NULL;
    res.err = 0;
    return (&res);
@@ -102,9 +102,10 @@ int * altera_1_svc(struct contato_t *contato, struct svc_req *rqstp) {
 
          cont++;
       }
+
+      fclose(arquivo);
    } 
 
-   fclose(arquivo);
    res = 0;
    return (&res);
 }
@@ -116,22 +117,25 @@ int * remove_1_svc(str_t *nome, struct svc_req *rqstp) {
 
    printf("Recebeu remoção: %s\n", *nome);
 
-   FILE * arquivo = fopen("dados.bin", "rb+");
+   res = 0;
+   FILE * arquivo = fopen("dados.bin", "rb");
    if (arquivo != NULL){
-      contato_bin contato_aux;
       while(fread(&cb[cont], sizeof(contato_bin), 1, arquivo)){
-         if(strcmp(*nome, contato_aux.nome) != 0){
+         if(strcmp(*nome, cb[cont].nome) != 0){
             cont++;
+            cb = realloc(cb, (cont + 1) * sizeof(contato_bin));
          } else{
             res = 1;
          }
       }
 
       fclose(arquivo);
-      FILE * arquivo = fopen("dados.bin", "wb+");
+      FILE * arquivo = fopen("dados.bin", "wb");
       fwrite(cb, sizeof(contato_bin), cont, arquivo);
-   } 
+      fclose(arquivo);
 
-   fclose(arquivo);
+      free(cb);
+   }
+
    return (&res);
 }

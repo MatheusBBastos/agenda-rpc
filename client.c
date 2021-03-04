@@ -1,11 +1,24 @@
 /* Arquivo client.c: um cliente RPC simples */
  
 #include <stdio.h>
+#include <sys/time.h>
 #include "agenda.h"
+
+void ler_string(char *string) {
+    fgets(string, 255, stdin);
+    string[strcspn(string, "\n")] = 0;
+}
  
 /* função que chama a RPC consulta_1 */
 consulta_res *consulta_contato(CLIENT *clnt, str_t nome) {
-    consulta_res *res = consulta_1(&nome,clnt);
+    struct rpc_err err;
+
+    consulta_res *res;
+    do {
+        res = consulta_1(&nome,clnt);
+        /* retransmitir se ocorrer um timeout */
+    } while (res == NULL && (clnt_geterr(clnt, &err), err.re_status == RPC_TIMEDOUT));
+
     if (res == NULL) {
         printf ("Problemas ao chamar a função remota\n");
         exit (1);
@@ -15,7 +28,14 @@ consulta_res *consulta_contato(CLIENT *clnt, str_t nome) {
 }
 
 int insere_contato(struct contato_t *contato, CLIENT *clnt) {
-    int *res = insere_1(contato, clnt);
+    struct rpc_err err;
+
+    int *res;
+    do {
+        res = insere_1(contato, clnt);
+        /* retransmitir se ocorrer um timeout */
+    } while (res == NULL && (clnt_geterr(clnt, &err), err.re_status == RPC_TIMEDOUT));
+
     if (res == NULL) {
         printf("Problemas ao chamar a função remota\n");
         exit(1);
@@ -25,7 +45,14 @@ int insere_contato(struct contato_t *contato, CLIENT *clnt) {
 }
 
 int altera_contato(struct contato_t *contato, CLIENT *clnt) {
-    int *res = altera_1(contato, clnt);
+    struct rpc_err err;
+
+    int *res;
+    do {
+        res = altera_1(contato, clnt);
+        /* retransmitir se ocorrer um timeout */
+    } while (res == NULL && (clnt_geterr(clnt, &err), err.re_status == RPC_TIMEDOUT));
+
     if (res == NULL) {
         printf("Problemas ao chamar a função remota\n");
         exit(1);
@@ -35,7 +62,14 @@ int altera_contato(struct contato_t *contato, CLIENT *clnt) {
 }
 
 int remove_contato(str_t nome, CLIENT *clnt) {
-    int *res = remove_1(&nome, clnt);
+    struct rpc_err err;
+
+    int *res;
+    do {
+        res = remove_1(&nome, clnt);
+        /* retransmitir se ocorrer um timeout */
+    } while (res == NULL && (clnt_geterr(clnt, &err), err.re_status == RPC_TIMEDOUT));
+    
     if (res == NULL) {
         printf("Problemas ao chamar a função remota\n");
         exit(1);
@@ -63,34 +97,39 @@ int main( int argc, char *argv[]) {
         exit(1);
     }
 
-    struct contato_t contatoins = { "Nomezaum", "Endereçozaum", "Telefonezaum" };
+    /* definir timeout para 10 segundos */
+    struct timeval timeout = { 10, 0 };
+    clnt_control(clnt, CLSET_TIMEOUT, &timeout);
 
     do {
-        printf("AGENDA RPC\n");
-        printf("Selecione uma opcao: ");
-        printf("1 - Consultar\n");
-        printf("2 - Inserir\n");
-        printf("3 - Alterar\n");
-        printf("4 - Remover\n");
-        printf("5 - Sair\n");
+        printf("========== AGENDA RPC ==========\n");
+        printf("| 1 - Consultar                |\n");
+        printf("| 2 - Inserir                  |\n");
+        printf("| 3 - Alterar                  |\n");
+        printf("| 4 - Remover                  |\n");
+        printf("| 5 - Sair                     |\n");
 
-        scanf("%d", &op);
+        printf("| Selecione uma opcao: ");
+        scanf("%d%*c", &op);
+
+        printf("================================\n");
 
         if(op == 1){
             char nome[255];
+
+            printf("| Consultar contato\n");
             
-            printf("Nome: ");
-            scanf("%s", nome);
+            printf("| Nome: ");
+            ler_string(nome);
 
             consulta_res *res = consulta_contato(clnt, nome);
 
             contato_p contato = res->consulta_res_u.contato;
             if (contato != NULL){
-                printf("Nome: %s\n", contato->nome);
-                printf("Endereço: %s\n", contato->endereco);
-                printf("Telefone: %s\n", contato->telefone);
+                printf("| Endereço: %s\n", contato->endereco);
+                printf("| Telefone: %s\n", contato->telefone);
             }else{
-                printf("Contato nao encontrado.\n");
+                printf("| Contato nao encontrado.\n");
             }    
         }
         else if (op == 2){
@@ -98,55 +137,61 @@ int main( int argc, char *argv[]) {
             char endereco[255];
             char telefone[255];
 
-            printf("Nome: ");
-            scanf("%s", nome);
-            printf("Endereço: ");
-            scanf("%s", endereco);
-            printf("Telefone: ");
-            scanf("%s", telefone);
+            printf("| Inserir contato\n");
 
-            struct contato_t contatoins = { nome, endereco, telefone };
-            int insere_res = insere_contato(&contatoins, clnt);
+            printf("| Nome: ");
+            ler_string(nome);
+            printf("| Endereço: ");
+            ler_string(endereco);
+            printf("| Telefone: ");
+            ler_string(telefone);
+
+            struct contato_t contato = { nome, endereco, telefone };
+            int insere_res = insere_contato(&contato, clnt);
 
             if (insere_res == 1)
-                printf("Contato inserido com sucesso.\n");
+                printf("| Contato inserido com sucesso.\n");
             else
-                printf("Já existe um contato com esse nome.\n");
+                printf("| Já existe um contato com esse nome.\n");
         }
         else if (op == 3){
             char nome[255];
             char endereco[255];
             char telefone[255];
 
-            printf("Nome: ");
-            scanf("%s", nome);
-            printf("Endereço: ");
-            scanf("%s", endereco);
-            printf("Telefone: ");
-            scanf("%s", telefone);
+            printf("| Alterar contato\n");
 
-            struct contato_t contatoins = { nome, endereco, telefone };
-            int altera_res = altera_contato(&contatoins, clnt);
+            printf("| Nome: ");
+            ler_string(nome);
+            printf("| Endereço: ");
+            ler_string(endereco);
+            printf("| Telefone: ");
+            ler_string(telefone);
+
+            struct contato_t contato = { nome, endereco, telefone };
+            int altera_res = altera_contato(&contato, clnt);
 
             if (altera_res == 1)
-                printf("Contato alterado com sucesso.\n");
+                printf("| Contato alterado com sucesso.\n");
             else
-                printf("Não existe um contato com esse nome.\n");
+                printf("| Não existe um contato com esse nome.\n");
         }
         else if (op == 4){
             char nome[255];
+
+            printf("| Remover contato\n");
             
-            printf("Nome: ");
-            scanf("%s", nome);
+            printf("| Nome: ");
+            ler_string(nome);
 
             int remove_res = remove_contato(nome, clnt);
 
             if (remove_res == 1)
-                printf("Contato removido com sucesso.\n");
+                printf("| Contato removido com sucesso.\n");
             else
-                printf("Não existe um contato com esse nome.\n");
+                printf("| Não existe um contato com esse nome.\n");
         }
-    }while(op != 5);
+    } while(op != 5);
 
     
     return 0;
