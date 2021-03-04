@@ -45,6 +45,8 @@ int remove_contato(str_t nome, CLIENT *clnt) {
 }
  
 int main( int argc, char *argv[]) {
+    int op;
+
     CLIENT *clnt; 
     /* verifica se o cliente foi chamado corretamente */
     if (argc != 2) {
@@ -63,27 +65,89 @@ int main( int argc, char *argv[]) {
 
     struct contato_t contatoins = { "Nomezaum", "Endereçozaum", "Telefonezaum" };
 
-    int insere_res = insere_contato(&contatoins, clnt);
-    printf("Resultado da inserção: %d\n", insere_res);
+    do {
+        printf("AGENDA RPC\n");
+        printf("Selecione uma opcao: ");
+        printf("1 - Consultar\n");
+        printf("2 - Inserir\n");
+        printf("3 - Alterar\n");
+        printf("4 - Remover\n");
+        printf("5 - Sair\n");
 
-    int altera_res = altera_contato(&contatoins, clnt);
-    printf("Resultado da alteração: %d\n", altera_res);
+        scanf("%d", &op);
 
-    int remove_res = remove_contato("Teste", clnt);
-    printf("Resultado da remoção: %d\n", insere_res);
+        if(op == 1){
+            char nome[255];
+            
+            printf("Nome: ");
+            scanf("%s", nome);
 
+            consulta_res *res = consulta_contato(clnt, nome);
 
-    consulta_res *res = consulta_contato(clnt, "Teste");
+            contato_p contato = res->consulta_res_u.contato;
+            if (contato != NULL){
+                printf("Nome: %s\n", contato->nome);
+                printf("Endereço: %s\n", contato->endereco);
+                printf("Telefone: %s\n", contato->telefone);
+            }else{
+                printf("Contato nao encontrado.\n");
+            }    
+        }
+        else if (op == 2){
+            char nome[255];
+            char endereco[255];
+            char telefone[255];
 
-    if (res->err != 0) {
-        printf("Erro recebido: %d\n", res->err);
-        exit(1);
-    }
+            printf("Nome: ");
+            scanf("%s", nome);
+            printf("Endereço: ");
+            scanf("%s", endereco);
+            printf("Telefone: ");
+            scanf("%s", telefone);
 
-    contato_p contato = res->consulta_res_u.contato;
-    printf("Nome: %s\n", contato->nome);
-    printf("Endereço: %s\n", contato->endereco);
-    printf("Telefone: %s\n", contato->telefone);
+            struct contato_t contatoins = { nome, endereco, telefone };
+            int insere_res = insere_contato(&contatoins, clnt);
 
+            if (insere_res == 1)
+                printf("Contato inserido com sucesso.\n");
+            else
+                printf("Já existe um contato com esse nome.\n");
+        }
+        else if (op == 3){
+            char nome[255];
+            char endereco[255];
+            char telefone[255];
+
+            printf("Nome: ");
+            scanf("%s", nome);
+            printf("Endereço: ");
+            scanf("%s", endereco);
+            printf("Telefone: ");
+            scanf("%s", telefone);
+
+            struct contato_t contatoins = { nome, endereco, telefone };
+            int altera_res = altera_contato(&contatoins, clnt);
+
+            if (altera_res == 1)
+                printf("Contato alterado com sucesso.\n");
+            else
+                printf("Não existe um contato com esse nome.\n");
+        }
+        else if (op == 4){
+            char nome[255];
+            
+            printf("Nome: ");
+            scanf("%s", nome);
+
+            int remove_res = remove_contato(nome, clnt);
+
+            if (remove_res == 1)
+                printf("Contato removido com sucesso.\n");
+            else
+                printf("Não existe um contato com esse nome.\n");
+        }
+    }while(op != 5);
+
+    
     return 0;
 }
