@@ -63,7 +63,7 @@ int altera_contato(struct contato_t *contato, CLIENT *clnt) {
 
 int remove_contato(str_t nome, CLIENT *clnt) {
     struct rpc_err err;
-
+    
     int *res;
     do {
         res = remove_1(&nome, clnt);
@@ -76,6 +76,23 @@ int remove_contato(str_t nome, CLIENT *clnt) {
     }
 
     return *res;
+}
+
+contatos_t *lista_contatos(CLIENT *clnt) {
+    struct rpc_err err;
+
+    contatos_t *res;
+    do {
+        res = lista_1(NULL, clnt);
+        /* retransmitir se ocorrer um timeout */
+    } while (res == NULL && (clnt_geterr(clnt, &err), err.re_status == RPC_TIMEDOUT));
+    
+    if (res == NULL) {
+        printf("Problemas ao chamar a função remota\n");
+        exit(1);
+    }
+
+    return res;
 }
  
 int main( int argc, char *argv[]) {
@@ -107,7 +124,8 @@ int main( int argc, char *argv[]) {
         printf("| 2 - Inserir                  |\n");
         printf("| 3 - Alterar                  |\n");
         printf("| 4 - Remover                  |\n");
-        printf("| 5 - Sair                     |\n");
+        printf("| 5 - Listar                   |\n");
+        printf("| 6 - Sair                     |\n");
 
         printf("| Selecione uma opcao: ");
         scanf("%d%*c", &op);
@@ -191,7 +209,24 @@ int main( int argc, char *argv[]) {
             else
                 printf("| Não existe um contato com esse nome.\n");
         }
-    } while(op != 5);
+        else if (op == 5) {
+            contatos_t *contatos = lista_contatos(clnt);
+
+            printf("| Lista de contatos\n");
+
+            if (contatos->contatos_t_len == 0) {
+                printf("| Não há nenhum contato cadastrado...\n");
+            } else {
+                for (int i = 0; i < contatos->contatos_t_len; i++) {
+                    printf("| -> %s\n", contatos->contatos_t_val[i].nome);
+                }
+            }
+
+            xdr_free((xdrproc_t) xdr_contatos_t, contatos);
+        }
+        
+        printf("\n");
+    } while(op != 6);
 
     
     return 0;

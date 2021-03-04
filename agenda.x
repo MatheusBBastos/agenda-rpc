@@ -18,6 +18,8 @@ union consulta_res switch (int err) {
 	default:
 		void;
 };
+
+typedef contato_t contatos_t<32>;
  
 /* Definição da interface que será oferecida aos clientes */
  
@@ -29,6 +31,7 @@ program AGENDA_PROG
     int INSERE (struct contato_t) = 2;
     int ALTERA (struct contato_t) = 3;
     int REMOVE (str_t)            = 4;
+    contatos_t LISTA ()             = 5;
   }
   = VERSION_NUMBER;
 }

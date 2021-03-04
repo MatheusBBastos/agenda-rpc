@@ -30,8 +30,6 @@ consulta_res * consulta_1_svc (str_t *nome, struct svc_req *rqstp) {
             cont->endereco = strdup(contato_aux.endereco);
             cont->telefone = strdup(contato_aux.telefone);
 
-            printf("%s\n%s\n%s", cont->nome, cont->endereco, cont->telefone);
-
             fclose(arquivo);
             return (&res);
          }
@@ -135,6 +133,46 @@ int * remove_1_svc(str_t *nome, struct svc_req *rqstp) {
       fclose(arquivo);
 
       free(cb);
+   }
+
+   return (&res);
+}
+
+contatos_t * lista_1_svc(void *a, struct svc_req *rqstp) {
+   static contatos_t res;
+
+   printf("Recebeu listagem\n");
+
+   xdr_free((xdrproc_t) xdr_contatos_t, &res);
+
+   res.contatos_t_len = 0;
+   res.contatos_t_val = NULL;
+
+   contato_p contatos = NULL;
+   int cont = 0;
+
+   FILE * arquivo = fopen("dados.bin", "rb");
+   if (arquivo != NULL){
+      contato_bin contato_aux;
+      while(fread(&contato_aux, sizeof(contato_bin), 1, arquivo)) {
+
+         if (contatos == NULL) {
+            contatos = malloc(sizeof(contato_t));
+         } else {
+            contatos = realloc(contatos, (cont + 1) * sizeof(contato_t));
+         }
+
+         contatos[cont].nome = strdup(contato_aux.nome);
+         contatos[cont].endereco = strdup(contato_aux.endereco);
+         contatos[cont].telefone = strdup(contato_aux.telefone);
+
+         cont++;
+      }
+
+      fclose(arquivo);
+
+      res.contatos_t_len = cont;
+      res.contatos_t_val = contatos;
    }
 
    return (&res);
